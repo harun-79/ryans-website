@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gallery - Marketplace</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <nav>
+        <strong>Art & Craft Marketplace</strong>
+        <div class="nav-links">
+          <a href="/index.html">Home</a>
+          <a href="/gallery.html">Gallery</a>
+          <a href="/login.html">Login/Register</a>
+          <a href="/admin.html">Admin Upload</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container">
+      <h1 class="section-title">All Products</h1>
+      <section id="gallery-grid" class="grid"></section>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/store.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+      renderProductGrid('gallery-grid');
+    </script>
+  </body>
+</html>

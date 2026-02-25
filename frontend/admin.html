@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <nav>
+        <strong>Art & Craft Marketplace</strong>
+        <div class="nav-links">
+          <a href="/index.html">Home</a>
+          <a href="/gallery.html">Gallery</a>
+          <a href="/login.html">Login/Register</a>
+          <a href="/admin.html">Admin Upload</a>
+          <a href="/db-viewer.html">DB Viewer</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <h1>Admin Product Upload</h1>
+        <p class="muted">Upload from your phone gallery/camera and publish to customer gallery.</p>
+      </section>
+
+      <form id="admin-product-form" class="form" enctype="multipart/form-data">
+        <input id="admin-key" type="password" placeholder="Admin Key (default: ryan)" required />
+        <input id="title" type="text" placeholder="Product title" required />
+        <input id="price" type="number" min="0.01" step="0.01" placeholder="Price" required />
+        <input id="artist-name" type="text" placeholder="Artist name" required />
+        <textarea id="description" placeholder="Description" required></textarea>
+        <label>
+          Upload image (phone gallery/camera)
+          <input id="image" type="file" accept="image/*" capture="environment" />
+        </label>
+        <input id="image-url" type="url" placeholder="Or image URL (optional)" />
+        <button type="submit">Publish Product</button>
+      </form>
+
+      <p id="admin-status" class="muted" style="margin-top: 12px"></p>
+
+      <section class="hero" style="margin-top: 18px">
+        <h2 class="section-title" style="margin-bottom: 8px">Posted Products (Database)</h2>
+        <button id="refresh-products" type="button">Refresh List</button>
+        <div id="posted-products" style="margin-top: 12px"></div>
+      </section>
+    </main>
+
+    <script src="/js/admin.js"></script>
+  </body>
+</html>

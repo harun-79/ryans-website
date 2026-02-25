@@ -1,0 +1,12 @@
+{
+  "name": "buyer-art-marketplace",
+  "version": "1.0.0",
+  "description": "Buyer-only art & craft marketplace",
+  "main": "backend/server.py",
+  "scripts": {
+    "start": ".\\.venv\\Scripts\\python.exe backend/server.py"
+  },
+  "keywords": ["marketplace", "art", "buyer"],
+  "author": "",
+  "license": "ISC"
+}
