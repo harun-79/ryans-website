@@ -9,6 +9,14 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // if already logged in, redirect immediately
+  React.useEffect(() => {
+    const auth = storage.getAuth();
+    if (auth && auth.token) {
+      navigate('/');
+    }
+  }, [navigate]);
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (e) => {
@@ -20,17 +28,18 @@ export default function LoginPage() {
       if (isRegister) {
         result = await api.register({ name, email, password });
         if (result.error) {
-          setMessage(result.error || 'Registration failed');
+          setMessage(result.error || result.message || 'Registration failed');
           return;
         }
         setMessage('Registration successful! Please log in.');
         setIsRegister(false);
         setName('');
         setPassword('');
+        // keep email so user can immediately submit login
       } else {
         result = await api.login({ email, password });
         if (result.error) {
-          setMessage(result.error || 'Login failed');
+          setMessage(result.error || result.message || 'Login failed');
           return;
         }
         if (result.token) {

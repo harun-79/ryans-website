@@ -1,16 +1,35 @@
 const API_BASE = '/api';
 
+// helper that normalizes fetch responses.  On non-OK responses we
+// return an object with an `error` field so callers can handle it
+// uniformly.  This mirrors the earlier components' expectations.
+async function handleResponse(response) {
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+  if (!response.ok) {
+    return { error: data.message || 'An error occurred' };
+  }
+  return data;
+}
+
 export const api = {
   async getProducts() {
     const response = await fetch(`${API_BASE}/products`);
-    if (!response.ok) throw new Error('Failed to load products');
-    return response.json();
+    // not strictly necessary to normalize but keep consistent
+    const data = await handleResponse(response);
+    if (data.error) throw new Error(data.error);
+    return data;
   },
 
   async getProductById(id) {
     const response = await fetch(`${API_BASE}/products/${id}`);
-    if (!response.ok) throw new Error('Failed to load product');
-    return response.json();
+    const data = await handleResponse(response);
+    if (data.error) throw new Error(data.error);
+    return data;
   },
 
   async register(payload) {
@@ -19,7 +38,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   async login(payload) {
@@ -28,7 +47,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   async placeOrder(payload, token) {
@@ -40,7 +59,7 @@ export const api = {
       },
       body: JSON.stringify(payload),
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   async mpesaCheckout(payload, token) {
@@ -52,7 +71,7 @@ export const api = {
       },
       body: JSON.stringify(payload),
     });
-    return response.json();
+    return handleResponse(response);
   },
 };
 
