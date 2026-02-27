@@ -3,6 +3,9 @@ const API_BASE = '/api';
 // helper that normalizes fetch responses.  On non-OK responses we
 // return an object with an `error` field so callers can handle it
 // uniformly.  This mirrors the earlier components' expectations.
+// helper that normalizes fetch responses.  On non-OK responses we
+// return an object with an `error` field so callers can handle it
+// uniformly.  This mirrors the earlier components' expectations.
 async function handleResponse(response) {
   let data;
   try {
@@ -11,7 +14,7 @@ async function handleResponse(response) {
     data = {};
   }
   if (!response.ok) {
-    return { error: data.message || 'An error occurred' };
+    return { error: data.message || `Error: ${response.status}` };
   }
   return data;
 }
@@ -73,6 +76,40 @@ export const api = {
     });
     return handleResponse(response);
   },
+
+  async loadAdminProducts(adminKey) {
+    const response = await fetch(`${API_BASE}/admin/products`, {
+      method: 'GET',
+      headers: { 'x-admin-key': adminKey },
+    });
+    return handleResponse(response);
+  },
+
+  async publishAdminProduct(formData, adminKey) {
+    const response = await fetch(`${API_BASE}/admin/products`, {
+      method: 'POST',
+      headers: { 'x-admin-key': adminKey },
+      body: formData,
+    });
+    return handleResponse(response);
+  },
+
+  async deleteAdminProduct(productId, adminKey) {
+    const response = await fetch(`${API_BASE}/admin/products/${productId}`, {
+      method: 'DELETE',
+      headers: { 'x-admin-key': adminKey },
+    });
+    return handleResponse(response);
+  },
+
+  async getDatabase(adminKey) {
+    const response = await fetch(`${API_BASE}/admin/db/products`, {
+      method: 'GET',
+      headers: { 'x-admin-key': adminKey },
+    });
+    const data = await handleResponse(response);
+    return data;
+  },
 };
 
 // Local storage helpers
@@ -127,5 +164,20 @@ export const storage = {
 
   logout() {
     localStorage.removeItem(AUTH_KEY);
+  },
+};
+
+// Theme/styling constants for consistent UI
+export const theme = {
+  colors: {
+    primary: '#1976d2',
+    success: '#4caf50',
+    danger: '#f44336',
+    warning: '#ff9800',
+    light: '#f5f5f5',
+    dark: '#333',
+    border: '#ddd',
+    text: '#333',
+    textMuted: '#666',
   },
 };

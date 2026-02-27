@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, storage } from '../utils';
+import { api, storage, theme } from '../utils';
 import '../styles/App.css';
 
 export default function AdminPage() {
