@@ -483,6 +483,20 @@ def login():
     )
 
 
+@app.get("/api")
+def api_root():
+    # simple helper route to avoid a 404 when hitting /api directly
+    return jsonify({
+        "message": "API root – use one of the documented endpoints",
+        "endpoints": [
+            "/api/products",
+            "/api/products/<id>",
+            "/api/login",
+            "/api/register",
+            "..."
+        ],
+    })
+
 @app.get("/api/products")
 def get_products():
     return jsonify(fetch_all_products())
@@ -728,7 +742,16 @@ def uploaded_files(filename: str):
 
 @app.get("/")
 def index():
-    return send_from_directory(SERVE_DIR, "index.html")
+    # serve main application entrypoint when available
+    index_file = SERVE_DIR / "index.html"
+    if index_file.exists():
+        return send_from_directory(SERVE_DIR, "index.html")
+    # when frontend hasn't been built (or you're running dev server)
+    # provide a clear message instead of a generic 404
+    return jsonify({
+        "message": "Frontend not built. run `npm run build` or start the
+dev server on port 5173 to view the UI."  # noqa: E501
+    }), 200
 
 
 @app.get("/<path:asset_path>")
@@ -738,10 +761,15 @@ def static_files(asset_path: str):
     if file_path.exists() and file_path.is_file():
         return send_from_directory(SERVE_DIR, asset_path)
 
-    # For SPA routing, if file doesn't exist, serve index.html
-    # (unless it looks like a static file)
+    # For SPA routing, if file doesn't exist, serve index.html if available
     if not asset_path.startswith("api/"):
-        return send_from_directory(SERVE_DIR, "index.html")
+        index_file = SERVE_DIR / "index.html"
+        if index_file.exists():
+            return send_from_directory(SERVE_DIR, "index.html")
+        return jsonify({
+            "message": "Frontend not built. run `npm run build` or start the
+dev server to handle this request."
+        }), 200
 
     return {"error": "Not found"}, 404
 
