@@ -749,8 +749,7 @@ def index():
     # when frontend hasn't been built (or you're running dev server)
     # provide a clear message instead of a generic 404
     return jsonify({
-        "message": "Frontend not built. run `npm run build` or start the
-dev server on port 5173 to view the UI."  # noqa: E501
+        "message": "Frontend not built. run `npm run build` or start the dev server on port 5173 to view the UI."  # noqa: E501
     }), 200
 
 
@@ -767,8 +766,7 @@ def static_files(asset_path: str):
         if index_file.exists():
             return send_from_directory(SERVE_DIR, "index.html")
         return jsonify({
-            "message": "Frontend not built. run `npm run build` or start the
-dev server to handle this request."
+            "message": "Frontend not built. run `npm run build` or start the dev server to handle this request."
         }), 200
 
     return {"error": "Not found"}, 404
@@ -777,3 +775,4 @@ dev server to handle this request."
 if __name__ == "__main__":
     initialize_database()
     app.run(host="0.0.0.0", port=PORT, debug=False)
+
