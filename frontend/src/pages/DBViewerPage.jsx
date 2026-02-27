@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api } from '../utils';
+import { api, theme } from '../utils';
 import '../styles/App.css';
 
 export default function DBViewerPage() {
@@ -33,7 +33,7 @@ export default function DBViewerPage() {
 
   return (
     <div className="container" style={{ maxWidth: '1000px', margin: '30px auto' }}>
-      <h1>Database Viewer (Admin Only)</h1>
+      <h1 style={{ color: theme.colors.dark }}>Database Viewer (Admin Only)</h1>
       <div style={{ marginBottom: '20px' }}>
         <input
           type="password"
