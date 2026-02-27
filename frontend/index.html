@@ -15,25 +15,66 @@
           <a href="/gallery.html">Gallery</a>
           <a href="/login.html">Login/Register</a>
           <a href="/admin.html">Admin Upload</a>
+          <button id="cart-toggle" class="cart-btn">
+            🛒 Cart <span id="cart-count" class="cart-badge">0</span>
+          </button>
         </div>
       </nav>
     </header>
+    <div id="cart-sidebar" class="cart-sidebar">
+      <div class="cart-header">
+        <h2>Shopping Cart</h2>
+        <button id="cart-close" class="close-btn">✕</button>
+      </div>
+      <div id="sidebar-items" class="sidebar-items"></div>
+      <div class="cart-summary">
+        <h3>Total: $<span id="sidebar-total">0.00</span></h3>
+        <label for="mpesa-phone-sidebar">Phone for M-Pesa (e.g., 2547XXXXXXXX):</label>
+        <input id="mpesa-phone-sidebar" placeholder="Phone" />
+        <button id="mpesa-checkout-btn" class="pay-btn">Pay with M-Pesa</button>
+        <button id="regular-checkout-btn" class="checkout-btn">Regular Checkout</button>
+      </div>
+    </div>
+    <div id="cart-overlay" class="cart-overlay"></div>
 
     <main class="container">
-      <section class="hero">
-        <h1>Discover Unique Handmade Art</h1>
-        <p class="muted">Browse and order your favorite craft pieces in minutes.</p>
-      </section>
+      <div id="auth-section" class="auth-section">
+        <h1 class="section-title">Welcome to Art & Craft Marketplace</h1>
+        <p id="auth-status" class="muted"></p>
+        <div id="auth-actions" style="margin: 10px 0 18px"></div>
 
-      <h2 class="section-title">Featured Products</h2>
-      <section id="featured-grid" class="grid"></section>
+        <div style="display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))">
+          <form id="register-form" class="form">
+            <h2>Register</h2>
+            <input id="reg-name" type="text" placeholder="Name" required />
+            <input id="reg-email" type="email" placeholder="Email" required />
+            <input id="reg-password" type="password" placeholder="Password" required />
+            <button type="submit">Create Buyer Account</button>
+          </form>
+
+          <form id="login-form" class="form">
+            <h2>Login</h2>
+            <input id="login-email" type="email" placeholder="Email" required />
+            <input id="login-password" type="password" placeholder="Password" required />
+            <button type="submit">Login</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="products-section" style="display: none;">
+        <section class="hero">
+          <h1>Discover Unique Handmade Art</h1>
+          <p class="muted">Browse and order your favorite craft pieces in minutes.</p>
+        </section>
+
+        <h2 class="section-title">Featured Products</h2>
+        <section id="featured-grid" class="grid"></section>
+      </div>
     </main>
 
     <script src="/js/api.js"></script>
     <script src="/js/store.js"></script>
+    <script src="/js/auth.js"></script>
     <script src="/js/main.js"></script>
-    <script>
-      renderProductGrid('featured-grid', 3);
-    </script>
   </body>
 </html>

@@ -23,7 +23,12 @@
       <h1 class="section-title">Your Cart</h1>
       <div id="cart-items"></div>
       <h3>Total: $<span id="cart-total">0.00</span></h3>
-      <button id="checkout-btn">Checkout (Simulated Payment)</button>
+      <div class="checkout-controls">
+        <label for="mpesa-phone">Phone (for M-Pesa):</label>
+        <input id="mpesa-phone" placeholder="2547XXXXXXXX" />
+        <button id="mpesa-btn">Pay with M-Pesa</button>
+        <button id="checkout-btn">Checkout (Simulated Payment)</button>
+      </div>
     </main>
 
     <script src="/js/api.js"></script>

@@ -8,6 +8,7 @@ import hmac
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -17,16 +18,29 @@ from werkzeug.utils import secure_filename
 
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent
+
+# Load environment variables from .env file if it exists
+ENV_FILE = PROJECT_ROOT / ".env"
+if ENV_FILE.exists():
+    with open(ENV_FILE) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip())
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
+PUBLIC_DIR = FRONTEND_DIR / "public"  # React build output directory
 UPLOADS_DIR = BASE_DIR / "uploads"
 DB_FILE = PROJECT_ROOT / "database.db"
 
 PORT = int(os.getenv("PORT", "3000"))
 JWT_SECRET = os.getenv("JWT_SECRET", "dev_secret_change_me")
-ADMIN_KEY = os.getenv("ADMIN_KEY", "ryan")
+ADMIN_KEY = os.getenv("ADMIN_KEY", "dev_admin_key_change_me")
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif"}
 
-app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
+# Serve from public directory if it exists (React build), otherwise frontend directory
+SERVE_DIR = PUBLIC_DIR if PUBLIC_DIR.exists() else FRONTEND_DIR
+app = Flask(__name__, static_folder=str(SERVE_DIR), static_url_path="")
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -235,6 +249,16 @@ def insert_order_with_items(order: dict[str, Any], items: list[dict[str, Any]]) 
             )
 
 
+# BUG FIX: was incorrectly nested inside insert_order_with_items, making it
+# a local function and causing a NameError when called from the M-Pesa timer thread.
+def update_order_status_in_db(order_id: str, new_status: str) -> None:
+    with get_db_connection() as connection:
+        connection.execute(
+            "UPDATE orders SET status = ? WHERE id = ?",
+            (new_status, order_id),
+        )
+
+
 def fetch_orders_by_buyer(buyer_id: str) -> list[dict[str, Any]]:
     with get_db_connection() as connection:
         order_rows = connection.execute(
@@ -309,6 +333,14 @@ def delete_product_by_id(product_id: str) -> bool:
 
 def is_allowed_image(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+
+
+def generate_unique_id(prefix: str) -> str:
+    """Generate a unique ID using a combination of timestamp and random bytes
+    to avoid collisions when multiple requests arrive in the same millisecond."""
+    ts = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
+    rand = int.from_bytes(os.urandom(4), "big") % 100000
+    return f"{prefix}{ts}_{rand}"
 
 
 def admin_required(func):
@@ -403,7 +435,7 @@ def register():
         return jsonify({"message": "Email already exists"}), 409
 
     user = {
-        "id": f"u_{int(datetime.now(tz=timezone.utc).timestamp() * 1000)}",
+        "id": generate_unique_id("u_"),
         "name": name,
         "email": email,
         "password": generate_password_hash(password),
@@ -546,7 +578,7 @@ def create_product_admin():
         return jsonify({"message": "Provide an image file or image URL"}), 400
 
     product = {
-        "id": f"p{int(datetime.now(tz=timezone.utc).timestamp() * 1000)}",
+        "id": generate_unique_id("p"),
         "title": title,
         "price": parsed_price,
         "description": description,
@@ -611,7 +643,7 @@ def create_order():
     total_price = sum(item["price"] * item["quantity"] for item in matched_items)
 
     order = {
-        "id": f"o_{int(datetime.now(tz=timezone.utc).timestamp() * 1000)}",
+        "id": generate_unique_id("o_"),
         "buyerId": request.user["userId"],
         "totalPrice": total_price,
         "status": "completed",
@@ -621,6 +653,60 @@ def create_order():
     insert_order_with_items(order, matched_items)
 
     return jsonify({"message": "Order placed successfully", "order": {**order, "items": matched_items}}), 201
+
+
+@app.post("/api/mpesa/checkout")
+@token_required
+def mpesa_checkout():
+    payload = request.get_json(silent=True) or {}
+    items = payload.get("items", [])
+    phone = str(payload.get("phone", "")).strip()
+
+    if not isinstance(items, list) or not items:
+        return jsonify({"message": "Order items are required"}), 400
+
+    if not phone:
+        return jsonify({"message": "Phone number is required for M-Pesa"}), 400
+
+    products = fetch_all_products()
+    matched_items = []
+
+    for item in items:
+        product_id = item.get("productId")
+        quantity = int(item.get("quantity", 1) or 1)
+
+        product = next((product for product in products if product.get("id") == product_id), None)
+        if not product:
+            return jsonify({"message": f"Invalid product ID: {product_id}"}), 400
+
+        matched_items.append(
+            {
+                "productId": product["id"],
+                "title": product["title"],
+                "price": product["price"],
+                "quantity": max(1, quantity),
+            }
+        )
+
+    total_price = sum(item["price"] * item["quantity"] for item in matched_items)
+
+    order = {
+        "id": generate_unique_id("o_"),
+        "buyerId": request.user["userId"],
+        "totalPrice": total_price,
+        "status": "pending",
+        "createdAt": datetime.now(tz=timezone.utc).isoformat(),
+    }
+
+    insert_order_with_items(order, matched_items)
+
+    def mark_complete():
+        update_order_status_in_db(order["id"], "completed")
+
+    # Simulate M-Pesa asynchronous confirmation after a short delay
+    threading.Timer(5.0, mark_complete).start()
+
+    return jsonify({"message": "M-Pesa checkout initiated", "order": {**order, "items": matched_items}, "mpesa": {"status": "initiated", "phone": phone}}), 201
 
 
 @app.get("/api/orders")
@@ -642,12 +728,22 @@ def uploaded_files(filename: str):
 
 @app.get("/")
 def index():
-    return send_from_directory(FRONTEND_DIR, "index.html")
+    return send_from_directory(SERVE_DIR, "index.html")
 
 
 @app.get("/<path:asset_path>")
 def static_files(asset_path: str):
-    return send_from_directory(FRONTEND_DIR, asset_path)
+    # Try to serve the requested file first
+    file_path = SERVE_DIR / asset_path
+    if file_path.exists() and file_path.is_file():
+        return send_from_directory(SERVE_DIR, asset_path)
+
+    # For SPA routing, if file doesn't exist, serve index.html
+    # (unless it looks like a static file)
+    if not asset_path.startswith("api/"):
+        return send_from_directory(SERVE_DIR, "index.html")
+
+    return {"error": "Not found"}, 404
 
 
 if __name__ == "__main__":

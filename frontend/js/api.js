@@ -40,4 +40,17 @@ const api = {
     });
     return response.json();
   }
+,
+
+  async mpesaCheckout(payload, token) {
+    const response = await fetch('/api/mpesa/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    return response.json();
+  }
 };

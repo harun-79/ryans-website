@@ -81,4 +81,37 @@ async function handleCheckout() {
 }
 
 document.getElementById('checkout-btn')?.addEventListener('click', handleCheckout);
+document.getElementById('mpesa-btn')?.addEventListener('click', handleMpesaCheckout);
 renderCart();
+
+async function handleMpesaCheckout() {
+  const auth = getAuth();
+  if (!auth?.token) {
+    alert('Please login before checkout.');
+    window.location.href = '/login.html';
+    return;
+  }
+
+  const cart = getCart();
+  if (!cart.length) {
+    alert('Your cart is empty.');
+    return;
+  }
+
+  const phone = (document.getElementById('mpesa-phone') || {}).value || '';
+  if (!phone || phone.trim().length < 9) {
+    alert('Enter a valid phone number for M-Pesa (e.g. 2547XXXXXXXX).');
+    return;
+  }
+
+  const payload = { items: cart, phone };
+  const result = await api.mpesaCheckout(payload, auth.token);
+
+  if (result.order) {
+    clearCart();
+    alert(`M-Pesa payment initiated. Order ID: ${result.order.id}`);
+    window.location.reload();
+  } else {
+    alert(result.message || 'Failed to initiate M-Pesa payment');
+  }
+}
