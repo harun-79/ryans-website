@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Art & Craft Marketplace</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">🎨 Art & Craft</a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/gallery.html">Gallery</a>
+        <a href="/admin.html">🔒 Admin</a>
+        <a href="/db-viewer.html">📊 Database</a>
+        <a id="logoutBtn" href="#">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h1>🔒 Admin Panel</h1>
+
+    <div class="admin-section">
+      <div>
+        <input type="password" id="adminKey" placeholder="Enter admin key" class="form-input">
+        <button id="loadBtn" class="btn">📂 Load Products</button>
+        <button id="toggleFormBtn" class="btn" style="background:#4caf50;">+ New Product</button>
+      </div>
+
+      <div id="statusMsg" class="status-msg" style="display:none;"></div>
+    </div>
+
+    <div id="productForm" class="form-section" style="display:none;">
+      <h2>📝 Add New Product</h2>
+      <form id="newProductForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="title">Title:</label>
+            <input type="text" id="title" required placeholder="Product title">
+          </div>
+          <div class="form-group">
+            <label for="price">Price:</label>
+            <input type="number" id="price" required step="0.01" placeholder="99.99">
+          </div>
+          <div class="form-group">
+            <label for="artistName">Artist Name:</label>
+            <input type="text" id="artistName" required placeholder="Your name">
+          </div>
+          <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea id="description" required placeholder="Product description" style="grid-column:1/-1;"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="imageFile">Upload Image:</label>
+            <input type="file" id="imageFile" accept="image/*">
+          </div>
+          <div class="form-group">
+            <label for="imageUrl">Or Image URL:</label>
+            <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg">
+          </div>
+        </div>
+        <button type="submit" class="btn" style="background:#4caf50;">✓ Publish Product</button>
+      </form>
+    </div>
+
+    <h2>📦 Your Products</h2>
+    <div id="productsList" class="products-list"></div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Art & Craft Marketplace. All rights reserved.</p>
+  </footer>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { auth } from './js/auth.js';
+
+    if (!auth.isAdmin()) {
+      window.location.href = '/login.html';
+    }
+
+    document.getElementById('logoutBtn').onclick = function(e) {
+      e.preventDefault();
+      auth.logout();
+      window.location.href = '/';
+    };
+
+    const adminKeyInput = document.getElementById('adminKey');
+    const loadBtn = document.getElementById('loadBtn');
+    const toggleFormBtn = document.getElementById('toggleFormBtn');
+    const productForm = document.getElementById('productForm');
+    const newProductForm = document.getElementById('newProductForm');
+    const statusMsg = document.getElementById('statusMsg');
+    const productsList = document.getElementById('productsList');
+    let products = [];
+
+    function showStatus(msg, isError = false) {
+      statusMsg.textContent = msg;
+      statusMsg.style.backgroundColor = isError ? '#ffcdd2' : '#c8e6c9';
+      statusMsg.style.color = isError ? '#c62828' : '#2e7d32';
+      statusMsg.style.display = 'block';
+    }
+
+    loadBtn.addEventListener('click', async () => {
+      const adminKey = adminKeyInput.value.trim();
+      if (!adminKey) {
+        showStatus('Enter admin key first', true);
+        return;
+      }
+
+      try {
+        products = await api.loadAdminProducts(adminKey);
+        renderProducts();
+        showStatus('✓ Products loaded successfully');
+      } catch (error) {
+        showStatus('Error: ' + error.message, true);
+        products = [];
+        renderProducts();
+      }
+    });
+
+    toggleFormBtn.addEventListener('click', () => {
+      productForm.style.display = productForm.style.display === 'none' ? 'block' : 'none';
+      toggleFormBtn.textContent = productForm.style.display === 'none' ? '+ New Product' : '✕ Cancel';
+    });
+
+    newProductForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const adminKey = adminKeyInput.value.trim();
+      if (!adminKey) {
+        showStatus('Enter admin key first', true);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('title', document.getElementById('title').value);
+      formData.append('price', document.getElementById('price').value);
+      formData.append('artistName', document.getElementById('artistName').value);
+      formData.append('description', document.getElementById('description').value);
+      if (document.getElementById('imageFile').files[0]) {
+        formData.append('image', document.getElementById('imageFile').files[0]);
+      }
+      if (document.getElementById('imageUrl').value) {
+        formData.append('imageUrl', document.getElementById('imageUrl').value);
+      }
+
+      try {
+        showStatus('Publishing product...');
+        await api.publishAdminProduct(formData, adminKey);
+        showStatus('✓ Product published successfully!');
+        newProductForm.reset();
+        productForm.style.display = 'none';
+        toggleFormBtn.textContent = '+ New Product';
+        const products = await api.loadAdminProducts(adminKey);
+        renderProducts(products);
+      } catch (error) {
+        showStatus('Error: ' + error.message, true);
+      }
+    });
+
+    function renderProducts(prods = products) {
+      if (prods.length === 0) {
+        productsList.innerHTML = '<p>No products yet</p>';
+        return;
+      }
+
+      productsList.innerHTML = prods.map(product => `
+        <div class="product-row">
+          <img src="${product.image}" alt="${product.title}" width="70" style="border-radius:8px;">
+          <div style="flex:1;">
+            <h3>${product.title}</h3>
+            <p>${product.description.substring(0, 100)}...</p>
+            <small>by ${product.artistName}</small>
+          </div>
+          <strong>$${Number(product.price).toFixed(2)}</strong>
+          <button class="btn-delete" onclick="deleteProduct('${product.id}', '${adminKeyInput.value}')">🗑️ Delete</button>
+        </div>
+      `).join('');
+    }
+
+    window.deleteProduct = async function(productId, adminKey) {
+      if (!confirm('Delete this product?')) return;
+      try {
+        await api.deleteAdminProduct(productId, adminKey);
+        showStatus('✓ Product deleted');
+        products = products.filter(p => p.id !== productId);
+        renderProducts();
+      } catch (error) {
+        showStatus('Error: ' + error.message, true);
+      }
+    };
+
+    renderProducts();
+  </script>
+</body>
+</html>

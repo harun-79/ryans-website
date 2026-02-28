@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art & Craft Marketplace</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">🎨 Art & Craft</a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/gallery.html">Gallery</a>
+        <a id="cartLink" href="/cart.html" style="display:none;">🛒 Cart</a>
+        <a id="adminLink" href="/admin.html" style="display:none;">🔒 Admin</a>
+        <a id="dbLink" href="/db-viewer.html" style="display:none;">📊 Database</a>
+        <a id="loginBtn" href="/login.html">Login</a>
+        <a id="logoutBtn" href="#" style="display:none;" onclick="logout()">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Welcome to Art & Craft Marketplace</h1>
+      <p>Discover unique handmade art and craft products from talented artists</p>
+      <a href="/gallery.html" class="btn">Shop Now</a>
+    </section>
+
+    <section class="featured">
+      <h2>Featured Products</h2>
+      <div id="featuredProducts" class="product-grid"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Art & Craft Marketplace. All rights reserved.</p>
+  </footer>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { auth } from './js/auth.js';
+
+    // Update nav based on auth state
+    function updateNav() {
+      const loggedIn = auth.isLoggedIn();
+      const isAdmin = auth.isAdmin();
+      
+      document.getElementById('cartLink').style.display = loggedIn ? 'inline' : 'none';
+      document.getElementById('adminLink').style.display = isAdmin ? 'inline' : 'none';
+      document.getElementById('dbLink').style.display = isAdmin ? 'inline' : 'none';
+      document.getElementById('loginBtn').style.display = loggedIn ? 'none' : 'inline';
+      document.getElementById('logoutBtn').style.display = loggedIn ? 'inline' : 'none';
+    }
+
+    window.logout = function() {
+      auth.logout();
+      updateNav();
+      alert('Logged out successfully');
+      window.location.href = '/';
+    };
+
+    // Load featured products
+    async function loadFeatured() {
+      try {
+        const products = await api.getProducts();
+        const container = document.getElementById('featuredProducts');
+        container.innerHTML = products.slice(0, 6).map(product => `
+          <div class="product-card">
+            <img src="${product.image}" alt="${product.title}" class="product-img">
+            <h3>${product.title}</h3>
+            <p class="artist">by ${product.artistName}</p>
+            <p class="price">$${Number(product.price).toFixed(2)}</p>
+            <a href="/product.html?id=${product.id}" class="btn">View Details</a>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load products:', error);
+      }
+    }
+
+    updateNav();
+    loadFeatured();
+  </script>
+</body>
+</html>

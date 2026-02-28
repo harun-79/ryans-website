@@ -1,62 +1,136 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Database Viewer</title>
-    <link rel="stylesheet" href="/css/styles.css" />
-  </head>
-  <body>
-    <header>
-      <nav>
-        <strong>Art & Craft Marketplace</strong>
-        <div class="nav-links">
-          <a href="/index.html">Home</a>
-          <a href="/gallery.html">Gallery</a>
-          <a href="/login.html">Login/Register</a>
-          <a href="/admin.html">Admin Upload</a>
-          <a href="/db-viewer.html">DB Viewer</a>
-        </div>
-      </nav>
-    </header>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Database Viewer - Art & Craft Marketplace</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">🎨 Art & Craft</a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/gallery.html">Gallery</a>
+        <a href="/admin.html">🔒 Admin</a>
+        <a href="/db-viewer.html">📊 Database</a>
+        <a id="logoutBtn" href="#">Logout</a>
+      </div>
+    </div>
+  </nav>
 
-    <main class="container">
-      <section class="hero">
-        <h1>Local Database Viewer</h1>
-        <p class="muted">See SQLite tables and posted products stored locally.</p>
-      </section>
+  <main class="container">
+    <h1>📊 Database Viewer</h1>
 
-      <section class="form" style="max-width: 620px">
-        <input id="db-admin-key" type="password" placeholder="Admin Key (ryan)" />
-        <button id="load-db-btn" type="button">Load Database</button>
-        <p id="db-status" class="muted"></p>
-      </section>
+    <div class="db-section">
+      <input type="password" id="adminKey" placeholder="Enter admin key" class="form-input">
+      <button id="loadBtn" class="btn">📂 Load Database</button>
+      <div id="statusMsg" class="status-msg" style="display:none;"></div>
+    </div>
 
-      <section class="hero" style="margin-top: 16px">
-        <h2>Tables</h2>
-        <ul id="table-list" class="muted"></ul>
-      </section>
+    <div id="tablesContainer"></div>
 
-      <section class="hero" style="margin-top: 16px">
-        <h2>Products Table</h2>
-        <div style="overflow:auto">
-          <table style="width:100%; border-collapse: collapse; background: rgba(255,255,255,0.92)">
-            <thead>
-              <tr>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd">ID</th>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd">Title</th>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd">Price</th>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd">Artist</th>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd">Created</th>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="products-table-body"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+    <div id="emptyState" style="display:none; text-align:center; padding:40px;color:#999;">
+      <p>📭 Enter admin key and click Load to view database tables</p>
+    </div>
+  </main>
 
-    <script src="/js/db-viewer.js"></script>
-  </body>
+  <footer>
+    <p>&copy; 2026 Art & Craft Marketplace. All rights reserved.</p>
+  </footer>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { auth } from './js/auth.js';
+
+    if (!auth.isAdmin()) {
+      window.location.href = '/login.html';
+    }
+
+    document.getElementById('logoutBtn').onclick = function(e) {
+      e.preventDefault();
+      auth.logout();
+      window.location.href = '/';
+    };
+
+    const adminKeyInput = document.getElementById('adminKey');
+    const loadBtn = document.getElementById('loadBtn');
+    const statusMsg = document.getElementById('statusMsg');
+    const tablesContainer = document.getElementById('tablesContainer');
+    const emptyState = document.getElementById('emptyState');
+
+    function showStatus(msg, isError = false) {
+      statusMsg.textContent = msg;
+      statusMsg.style.backgroundColor = isError ? '#ffcdd2' : '#c8e6c9';
+      statusMsg.style.color = isError ? '#c62828' : '#2e7d32';
+      statusMsg.style.display = 'block';
+    }
+
+    loadBtn.addEventListener('click', async () => {
+      const adminKey = adminKeyInput.value.trim();
+      if (!adminKey) {
+        showStatus('Enter admin key first', true);
+        return;
+      }
+
+      try {
+        loadBtn.disabled = true;
+        loadBtn.textContent = '⏳ Loading...';
+        const dbData = await api.getDatabase(adminKey);
+        renderTables(dbData);
+        showStatus('✓ Database loaded');
+        emptyState.style.display = 'none';
+      } catch (error) {
+        showStatus('Error: ' + error.message, true);
+        tablesContainer.innerHTML = '';
+        emptyState.style.display = 'block';
+      } finally {
+        loadBtn.disabled = false;
+        loadBtn.textContent = '📂 Load Database';
+      }
+    });
+
+    function renderTables(dbData) {
+      tablesContainer.innerHTML = Object.entries(dbData).map(([tableName, rows]) => {
+        if (!Array.isArray(rows) || rows.length === 0) {
+          return `
+            <div class="table-section">
+              <h3 style="background:#1976d2;color:#fff;padding:10px;margin:-15px -15px 10px -15px;">${tableName}</h3>
+              <p style="color:#999;">No data in table</p>
+            </div>
+          `;
+        }
+
+        const cols = Object.keys(rows[0]);
+        return `
+          <div class="table-section">
+            <h3 style="background:#1976d2;color:#fff;padding:10px;margin:-15px -15px 10px -15px;">${tableName}</h3>
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    ${cols.map(col => `<th>${col}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows.map((row, idx) => `
+                    <tr style="background:${idx % 2 === 0 ? '#fafafa' : '#fff'};">
+                      ${cols.map(col => `
+                        <td>${row[col] === null ? '<em style="color:#999;">NULL</em>' : String(row[col]).substring(0, 150)}</td>
+                      `).join('')}
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            <small style="color:#999;">Total rows: <strong>${rows.length}</strong></small>
+          </div>
+        `;
+      }).join('');
+    }
+
+    emptyState.style.display = 'block';
+  </script>
+</body>
 </html>

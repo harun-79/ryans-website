@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product - Art & Craft Marketplace</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">🎨 Art & Craft</a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/gallery.html">Gallery</a>
+        <a id="cartLink" href="/cart.html" style="display:none;">🛒 Cart</a>
+        <a id="adminLink" href="/admin.html" style="display:none;">🔒 Admin</a>
+        <a id="dbLink" href="/db-viewer.html" style="display:none;">📊 Database</a>
+        <a id="loginBtn" href="/login.html">Login</a>
+        <a id="logoutBtn" href="#" style="display:none;">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <a href="/gallery.html" class="btn-back">← Back to Gallery</a>
+    
+    <div id="productDetail" class="product-detail"></div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Art & Craft Marketplace. All rights reserved.</p>
+  </footer>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { auth } from './js/auth.js';
+    import { store } from './js/store.js';
+
+    function updateNav() {
+      const loggedIn = auth.isLoggedIn();
+      const isAdmin = auth.isAdmin();
+      
+      document.getElementById('cartLink').style.display = loggedIn ? 'inline' : 'none';
+      document.getElementById('adminLink').style.display = isAdmin ? 'inline' : 'none';
+      document.getElementById('dbLink').style.display = isAdmin ? 'inline' : 'none';
+      document.getElementById('loginBtn').style.display = loggedIn ? 'none' : 'inline';
+      document.getElementById('logoutBtn').style.display = loggedIn ? 'inline' : 'none';
+      
+      if (document.getElementById('logoutBtn')) {
+        document.getElementById('logoutBtn').onclick = function(e) {
+          e.preventDefault();
+          auth.logout();
+          updateNav();
+          alert('Logged out successfully');
+          window.location.href = '/';
+        };
+      }
+    }
+
+    const productId = new URLSearchParams(window.location.search).get('id');
+
+    async function loadProduct() {
+      if (!productId) {
+        document.getElementById('productDetail').innerHTML = '<p>Product not found</p>';
+        return;
+      }
+
+      try {
+        const product = await api.getProduct(productId);
+        const loggedIn = auth.isLoggedIn();
+        
+        document.getElementById('productDetail').innerHTML = `
+          <div class="product-detail-content">
+            <img src="${product.image}" alt="${product.title}" class="product-detail-img">
+            <div class="product-info">
+              <h1>${product.title}</h1>
+              <p class="artist">Artist: ${product.artistName}</p>
+              <p class="price-large">$${Number(product.price).toFixed(2)}</p>
+              <p class="description">${product.description}</p>
+              
+              ${loggedIn ? `
+                <button class="btn" id="addToCartBtn">Add to Cart</button>
+              ` : `
+                <p style="color: #666;">
+                  <a href="/login.html">Login</a> to purchase this item
+                </p>
+              `}
+            </div>
+          </div>
+        `;
+
+        if (loggedIn) {
+          document.getElementById('addToCartBtn').addEventListener('click', () => {
+            store.addToCart(product);
+            alert('Added to cart!');
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load product:', error);
+        document.getElementById('productDetail').innerHTML = '<p>Failed to load product</p>';
+      }
+    }
+
+    updateNav();
+    loadProduct();
+  </script>
+</body>
+</html>

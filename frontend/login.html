@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Art & Craft Marketplace</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">🎨 Art & Craft</a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/gallery.html">Gallery</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="auth-form-container">
+      <h1>Login / Register</h1>
+      
+      <div id="errorMsg" class="error-msg" style="display:none;"></div>
+
+      <form id="authForm">
+        <div class="form-group">
+          <label for="email">Email:</label>
+          <input type="email" id="email" required placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input type="password" id="password" required placeholder="Enter password">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="isRegister"> Create new account (Register)
+          </label>
+        </div>
+        <button type="submit" class="btn" id="submitBtn">Login</button>
+      </form>
+    </div>
+  </main>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { auth } from './js/auth.js';
+
+    const form = document.getElementById('authForm');
+    const isRegisterCheckbox = document.getElementById('isRegister');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+
+    isRegisterCheckbox.addEventListener('change', () => {
+      submitBtn.textContent = isRegisterCheckbox.checked ? 'Register' : 'Login';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMsg.style.display = 'none';
+      errorMsg.textContent = '';
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      if (!email || !password) {
+        errorMsg.textContent = 'Email and password are required';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      try {
+        const endpoint = isRegisterCheckbox.checked ? 'register' : 'login';
+        const result = await api[endpoint](email, password);
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        auth.login(result.token, result.user);
+        window.location.href = '/';
+      } catch (error) {
+        errorMsg.textContent = error.message || 'Authentication failed';
+        errorMsg.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
