@@ -741,6 +741,7 @@ def uploaded_files(filename: str):
 
 
 @app.get("/")
+
 def index():
     # serve main application entrypoint when available
     index_file = SERVE_DIR / "index.html"
@@ -775,4 +776,3 @@ def static_files(asset_path: str):
 if __name__ == "__main__":
     initialize_database()
     app.run(host="0.0.0.0", port=PORT, debug=False)
-
