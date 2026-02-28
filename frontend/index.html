@@ -3,123 +3,217 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Art & Craft Marketplace</title>
+  <title>Art & Craft Marketplace - Home</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+  <!-- Navigation -->
   <nav class="navbar">
-    <div class="nav-container">
+    <div class="container nav-container">
       <a href="/" class="nav-logo">🎨 Art & Craft</a>
       <div class="nav-links">
         <a href="/">Home</a>
         <a href="/gallery.html">Gallery</a>
-        <a id="cartLink" href="/cart.html" style="display:none;">🛒 Cart</a>
-        <a id="adminLink" href="/admin.html" style="display:none;">🔒 Admin</a>
-        <a id="dbLink" href="/db-viewer.html" style="display:none;">📊 Database</a>
+        <a id="cartLink" href="#" style="display:none;">🛒 Cart (<span id="cartCount">0</span>)</a>
+        <a id="adminLink" href="/admin.html" style="display:none;">⚙️ Admin</a>
         <a id="loginBtn" href="/login.html">Login</a>
-        <a id="logoutBtn" href="#" style="display:none;" onclick="logout()">Logout</a>
+        <a id="logoutBtn" href="#" style="display:none;">Logout</a>
       </div>
     </div>
   </nav>
 
+  <!-- Main Content -->
   <main class="container">
-    <section class="hero">
+    <!-- Hero Section -->
+    <section style="text-align:center; padding:3rem 0; margin-bottom:3rem;">
       <h1>Welcome to Art & Craft Marketplace</h1>
-      <p>Discover unique handmade art and craft products from talented artists</p>
-      <a href="/gallery.html" class="btn">Shop Now</a>
+      <p style="font-size:1.1rem; margin-bottom:2rem; color:var(--muted);">Discover unique handmade art and craft products from talented artists worldwide</p>
+      <a href="/gallery.html" class="btn">🛍️ Start Shopping</a>
     </section>
 
-    <section class="features">
-      <h2>✨ Key Features</h2>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🎨</div>
-          <h3>Curated Art & Crafts</h3>
-          <p>Browse handmade products from talented artists worldwide</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🛒</div>
-          <h3>Easy Shopping Cart</h3>
-          <p>Add items to cart, manage quantities, and checkout seamlessly</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">💳</div>
-          <h3>Multiple Payment Options</h3>
-          <p>Pay with regular checkout or M-Pesa mobile payment</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">👤</div>
-          <h3>User Accounts</h3>
-          <p>Create an account, track orders, and manage your profile</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📦</div>
-          <h3>Order Management</h3>
-          <p>Track your orders and view complete order history</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔒</div>
-          <h3>Admin Panel</h3>
-          <p>Secure admin dashboard to upload and manage products</p>
-        </div>
+    <!-- Featured Products -->
+    <section>
+      <h2>Featured Products</h2>
+      <div id="featuredProducts" class="product-grid">
+        <div style="text-align:center; color:var(--muted);">Loading products...</div>
       </div>
     </section>
 
-    <section class="featured">
-      <h2>Featured Products</h2>
-      <div id="featuredProducts" class="product-grid"></div>
+    <!-- Features Section -->
+    <section style="margin-top:4rem; margin-bottom:3rem;">
+      <h2 style="text-align:center;">✨ Why Choose Us?</h2>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:2rem;">
+        <div class="card">
+          <h3>🎨 Curated Collection</h3>
+          <p>Hand-picked art and crafts from talented artists</p>
+        </div>
+        <div class="card">
+          <h3>🛒 Easy Shopping</h3>
+          <p>Simple cart management and smooth checkout experience</p>
+        </div>
+        <div class="card">
+          <h3>💳 Multiple Payments</h3>
+          <p>Support for regular checkout and M-Pesa mobile payment</p>
+        </div>
+        <div class="card">
+          <h3>👤 Account Management</h3>
+          <p>Track your orders and manage your profile</p>
+        </div>
+        <div class="card">
+          <h3>📦 Order Tracking</h3>
+          <p>View complete order history and status</p>
+        </div>
+        <div class="card">
+          <h3>🔒 Secure</h3>
+          <p>Your data is protected with modern security practices</p>
+        </div>
+      </div>
     </section>
   </main>
 
+  <!-- Footer -->
   <footer>
     <p>&copy; 2026 Art & Craft Marketplace. All rights reserved.</p>
   </footer>
 
-  <script type="module">
-    import { api } from './js/api.js';
-    import { auth } from './js/auth.js';
+  <!-- Cart Sidebar -->
+  <div id="cartOverlay" class="cart-overlay"></div>
+  <aside id="cartSidebar" class="cart-sidebar">
+    <div class="cart-header">
+      <h2>Your Cart</h2>
+      <button id="closeSidebar" class="close-btn">×</button>
+    </div>
+    <div class="sidebar-items" id="cartItemsList"></div>
+    <div class="cart-summary">
+      <h3>Summary</h3>
+      <div>
+        <span>Items:</span>
+        <span id="sidebarItemCount">0</span>
+      </div>
+      <div style="font-size:1.1rem; font-weight:bold;">
+        <span>Total:</span>
+        <span>$<span id="sidebarTotal">0.00</span></span>
+      </div>
+      <a href="/cart.html" class="btn" style="width:100%; margin-top:1rem;">View Full Cart</a>
+    </div>
+  </aside>
 
-    // Update nav based on auth state
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { auth } from '/js/auth.js';
+    import { store } from '/js/store.js';
+
+    // Update navigation based on auth state
     function updateNav() {
-      const loggedIn = auth.isLoggedIn();
+      const isLoggedIn = auth.isLoggedIn();
       const isAdmin = auth.isAdmin();
       
-      document.getElementById('cartLink').style.display = loggedIn ? 'inline' : 'none';
-      document.getElementById('adminLink').style.display = isAdmin ? 'inline' : 'none';
-      document.getElementById('dbLink').style.display = isAdmin ? 'inline' : 'none';
-      document.getElementById('loginBtn').style.display = loggedIn ? 'none' : 'inline';
-      document.getElementById('logoutBtn').style.display = loggedIn ? 'inline' : 'none';
-    }
+      document.getElementById('loginBtn').style.display = isLoggedIn ? 'none' : 'inline-block';
+      document.getElementById('logoutBtn').style.display = isLoggedIn ? 'inline-block' : 'none';
+      document.getElementById('cartLink').style.display = isLoggedIn ? 'inline-block' : 'none';
+      document.getElementById('adminLink').style.display = isAdmin ? 'inline-block' : 'none';
 
-    window.logout = function() {
-      auth.logout();
-      updateNav();
-      alert('Logged out successfully');
-      window.location.href = '/';
-    };
+      document.getElementById('logoutBtn').onclick = (e) => {
+        e.preventDefault();
+        auth.logout();
+        updateNav();
+        alert('Logged out successfully');
+        window.location.href = '/';
+      };
+    }
 
     // Load featured products
     async function loadFeatured() {
       try {
         const products = await api.getProducts();
         const container = document.getElementById('featuredProducts');
-        container.innerHTML = products.slice(0, 6).map(product => `
+        
+        if (products.length === 0) {
+          container.innerHTML = '<p style="grid-column:1/-1; text-align:center;">No products available</p>';
+          return;
+        }
+
+        container.innerHTML = products.slice(0, 6).map(p => `
           <div class="product-card">
-            <img src="${product.image}" alt="${product.title}" class="product-img">
-            <h3>${product.title}</h3>
-            <p class="artist">by ${product.artistName}</p>
-            <p class="price">$${Number(product.price).toFixed(2)}</p>
-            <a href="/product.html?id=${product.id}" class="btn">View Details</a>
+            <img src="${p.image}" alt="${p.title}" class="product-image">
+            <div class="product-content">
+              <div class="product-title">${p.title}</div>
+              <div class="product-artist">by ${p.artistName}</div>
+              <div class="product-price">$${parseFloat(p.price).toFixed(2)}</div>
+              <p class="product-description">${(p.description || '').substring(0, 80)}...</p>
+              <div class="product-actions" style="margin-top:auto;">
+                <a href="/product.html?id=${p.id}" class="btn btn-small" style="flex:1;">View</a>
+                ${auth.isLoggedIn() ? `<button class="btn btn-small" onclick="window.addToCart('${p.id}', '${p.title}', ${p.price})" style="flex:1;">Add</button>` : ''}
+              </div>
+            </div>
           </div>
         `).join('');
       } catch (error) {
-        console.error('Failed to load products:', error);
+        document.getElementById('featuredProducts').innerHTML = `<div class="alert alert-danger" style="grid-column:1/-1;">${error.message}</div>`;
       }
     }
 
+    // Cart functions
+    window.addToCart = function(id, title, price) {
+      const product = { id, title, price, quantity: 1 };
+      store.addToCart(product);
+      updateCartDisplay();
+      alert(`${title} added to cart!`);
+    };
+
+    function updateCartDisplay() {
+      const cart = store.getCart();
+      const count = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      document.getElementById('cartCount').textContent = count;
+      document.getElementById('sidebarItemCount').textContent = count;
+      
+      const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+      document.getElementById('sidebarTotal').textContent = total.toFixed(2);
+
+      const itemsList = document.getElementById('cartItemsList');
+      if (cart.length === 0) {
+        itemsList.innerHTML = '<p style="padding:1rem; text-align:center; color:var(--muted);">Your cart is empty</p>';
+      } else {
+        itemsList.innerHTML = cart.map(item => `
+          <div class="cart-item">
+            <strong>${item.title}</strong>
+            <div style="color:var(--muted); font-size:0.85rem;">$${parseFloat(item.price).toFixed(2)} × ${item.quantity || 1}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Cart sidebar toggle
+    const cartLink = document.getElementById('cartLink');
+    const cartSidebar = document.getElementById('cartSidebar');
+    const cartOverlay = document.getElementById('cartOverlay');
+    const closeSidebar = document.getElementById('closeSidebar');
+
+    if (cartLink) {
+      cartLink.onclick = (e) => {
+        e.preventDefault();
+        cartSidebar.classList.add('open');
+        cartOverlay.classList.add('open');
+      };
+    }
+
+    closeSidebar.onclick = () => {
+      cartSidebar.classList.remove('open');
+      cartOverlay.classList.remove('open');
+    };
+
+    cartOverlay.onclick = () => {
+      cartSidebar.classList.remove('open');
+      cartOverlay.classList.remove('open');
+    };
+
+    // Initialize
     updateNav();
     loadFeatured();
+    updateCartDisplay();
+
+    // Listen for cart updates
+    window.addEventListener('storage', updateCartDisplay);
   </script>
-  <script type="module" src="/js/cartSidebar.js"></script>
 </body>
 </html>

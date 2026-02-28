@@ -1,21 +1,45 @@
-// API utility functions
+/**
+ * API Client - Handles all communication with the Flask backend
+ * Backend URL: /api
+ */
+
 const API_BASE = '/api';
 
-export async function handleResponse(response) {
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || data.message || `Error: ${response.status}`);
+/**
+ * Parse response and handle errors
+ */
+async function handleResponse(response) {
+  try {
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || data.error || `Error: ${response.status}`);
+    }
+    return data;
+  } catch (err) {
+    throw new Error(err.message || 'Network error');
   }
-  return data;
 }
 
+/**
+ * Get authorization header with JWT token
+ */
+function getAuthHeader() {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
+/**
+ * API object with all endpoints
+ */
 export const api = {
-  // Auth endpoints
-  register: async (email, password) => {
+  /**
+   * Authentication
+   */
+  register: async (name, email, password) => {
     const response = await fetch(`${API_BASE}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ name, email, password }),
     });
     return handleResponse(response);
   },
@@ -29,7 +53,9 @@ export const api = {
     return handleResponse(response);
   },
 
-  // Product endpoints
+  /**
+   * Products - Public endpoints
+   */
   getProducts: async () => {
     const response = await fetch(`${API_BASE}/products`);
     return handleResponse(response);
@@ -40,38 +66,57 @@ export const api = {
     return handleResponse(response);
   },
 
-  // Order endpoints
-  checkout: async (items) => {
-    const response = await fetch(`${API_BASE}/checkout`, {
+  /**
+   * Orders - Requires authentication
+   */
+  createOrder: async (items) => {
+    const response = await fetch(`${API_BASE}/orders`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
       body: JSON.stringify({ items }),
     });
     return handleResponse(response);
   },
 
-  // M-Pesa endpoints
-  mpesaCheckout: async (items, phoneNumber) => {
+  getOrders: async () => {
+    const response = await fetch(`${API_BASE}/orders`, {
+      headers: getAuthHeader(),
+    });
+    return handleResponse(response);
+  },
+
+  /**
+   * M-Pesa Checkout - Requires authentication
+   */
+  mpesaCheckout: async (items, phone) => {
     const response = await fetch(`${API_BASE}/mpesa/checkout`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items, phoneNumber }),
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ items, phone }),
     });
     return handleResponse(response);
   },
 
-  // Admin endpoints
-  loadAdminProducts: async (adminKey) => {
+  /**
+   * Admin - Products
+   */
+  getAdminProducts: async (adminKey) => {
     const response = await fetch(`${API_BASE}/admin/products`, {
-      headers: { 'X-Admin-Key': adminKey },
+      headers: { 'x-admin-key': adminKey },
     });
     return handleResponse(response);
   },
 
-  publishAdminProduct: async (formData, adminKey) => {
+  createAdminProduct: async (formData, adminKey) => {
     const response = await fetch(`${API_BASE}/admin/products`, {
       method: 'POST',
-      headers: { 'X-Admin-Key': adminKey },
+      headers: { 'x-admin-key': adminKey },
       body: formData,
     });
     return handleResponse(response);
@@ -80,16 +125,43 @@ export const api = {
   deleteAdminProduct: async (productId, adminKey) => {
     const response = await fetch(`${API_BASE}/admin/products/${productId}`, {
       method: 'DELETE',
-      headers: { 'X-Admin-Key': adminKey },
+      headers: { 'x-admin-key': adminKey },
     });
     return handleResponse(response);
   },
 
-  // Database endpoints
-  getDatabase: async (adminKey) => {
-    const response = await fetch(`${API_BASE}/admin/db/products`, {
-      headers: { 'X-Admin-Key': adminKey },
+  uploadAdminImage: async (file, adminKey) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await fetch(`${API_BASE}/admin/upload-image`, {
+      method: 'POST',
+      headers: { 'x-admin-key': adminKey },
+      body: formData,
     });
     return handleResponse(response);
   },
+
+  /**
+   * Admin - Database
+   */
+  getAdminDatabase: async (adminKey) => {
+    const response = await fetch(`${API_BASE}/admin/db/products`, {
+      headers: { 'x-admin-key': adminKey },
+    });
+    return handleResponse(response);
+  },
+
+  /**
+   * Health check
+   */
+  health: async () => {
+    const response = await fetch(`${API_BASE}/health`);
+    return handleResponse(response);
+  },
+
+  // Legacy method names for compatibility
+  checkout: async (items) => api.createOrder(items),
+  loadAdminProducts: async (adminKey) => api.getAdminProducts(adminKey),
+  publishAdminProduct: async (formData, adminKey) => api.createAdminProduct(formData, adminKey),
+  getDatabase: async (adminKey) => api.getAdminDatabase(adminKey),
 };
