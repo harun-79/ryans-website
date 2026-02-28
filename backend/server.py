@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Dict, Optional
 
 from flask import Flask, jsonify, request, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -114,7 +114,7 @@ def initialize_database() -> None:
         )
 
 
-def fetch_all_products() -> list[dict[str, Any]]:
+def fetch_all_products() -> List[Dict[str, Any]]:
     with get_db_connection() as connection:
         rows = connection.execute(
             """
@@ -138,7 +138,7 @@ def fetch_all_products() -> list[dict[str, Any]]:
     ]
 
 
-def fetch_product_by_id(product_id: str) -> dict[str, Any] | None:
+def fetch_product_by_id(product_id: str) -> Optional[Dict[str, Any]]:
     with get_db_connection() as connection:
         row = connection.execute(
             """
@@ -163,7 +163,7 @@ def fetch_product_by_id(product_id: str) -> dict[str, Any] | None:
     }
 
 
-def fetch_database_tables() -> list[str]:
+def fetch_database_tables() -> List[str]:
     with get_db_connection() as connection:
         rows = connection.execute(
             """
@@ -176,7 +176,7 @@ def fetch_database_tables() -> list[str]:
     return [row["name"] for row in rows]
 
 
-def fetch_user_by_email(email: str) -> dict[str, Any] | None:
+def fetch_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     with get_db_connection() as connection:
         row = connection.execute(
             """
@@ -199,7 +199,7 @@ def fetch_user_by_email(email: str) -> dict[str, Any] | None:
     }
 
 
-def insert_user(user: dict[str, Any]) -> None:
+def insert_user(user: Dict[str, Any]) -> None:
     with get_db_connection() as connection:
         connection.execute(
             """
@@ -217,7 +217,7 @@ def insert_user(user: dict[str, Any]) -> None:
         )
 
 
-def insert_order_with_items(order: dict[str, Any], items: list[dict[str, Any]]) -> None:
+def insert_order_with_items(order: Dict[str, Any], items: List[Dict[str, Any]]) -> None:
     with get_db_connection() as connection:
         connection.execute(
             """
@@ -259,7 +259,7 @@ def update_order_status_in_db(order_id: str, new_status: str) -> None:
         )
 
 
-def fetch_orders_by_buyer(buyer_id: str) -> list[dict[str, Any]]:
+def fetch_orders_by_buyer(buyer_id: str) -> List[Dict[str, Any]]:
     with get_db_connection() as connection:
         order_rows = connection.execute(
             """
@@ -271,7 +271,7 @@ def fetch_orders_by_buyer(buyer_id: str) -> list[dict[str, Any]]:
             (buyer_id,),
         ).fetchall()
 
-        orders: list[dict[str, Any]] = []
+        orders: List[Dict[str, Any]] = []
         for row in order_rows:
             item_rows = connection.execute(
                 """
@@ -306,7 +306,7 @@ def fetch_orders_by_buyer(buyer_id: str) -> list[dict[str, Any]]:
     return orders
 
 
-def insert_product(product: dict[str, Any]) -> None:
+def insert_product(product: Dict[str, Any]) -> None:
     with get_db_connection() as connection:
         connection.execute(
             """
@@ -363,7 +363,7 @@ def _b64url_decode(value: str) -> bytes:
     return base64.urlsafe_b64decode((value + padding).encode("utf-8"))
 
 
-def create_token(payload: dict[str, Any], expires_delta: timedelta) -> str:
+def create_token(payload: Dict[str, Any], expires_delta: timedelta) -> str:
     payload_to_sign = dict(payload)
     exp = int((datetime.now(tz=timezone.utc) + expires_delta).timestamp())
     payload_to_sign["exp"] = exp
@@ -377,7 +377,7 @@ def create_token(payload: dict[str, Any], expires_delta: timedelta) -> str:
     return f"{payload_b64}.{signature}"
 
 
-def decode_token(token: str) -> dict[str, Any]:
+def decode_token(token: str) -> Dict[str, Any]:
     parts = token.split(".")
     if len(parts) != 2:
         raise ValueError("Malformed token")
@@ -737,7 +737,7 @@ def health():
 
 @app.get("/uploads/<path:filename>")
 def uploaded_files(filename: str):
-    return send_from_directory(UPLOADS_DIR, filename)
+    return send_from_directory(str(UPLOADS_DIR), filename)
 
 
 @app.get("/")
@@ -746,7 +746,7 @@ def index():
     # serve main application entrypoint when available
     index_file = SERVE_DIR / "index.html"
     if index_file.exists():
-        return send_from_directory(SERVE_DIR, "index.html")
+        return send_from_directory(str(SERVE_DIR), "index.html")
     # when frontend hasn't been built (or you're running dev server)
     # provide a clear message instead of a generic 404
     return jsonify({
@@ -759,13 +759,13 @@ def static_files(asset_path: str):
     # Try to serve the requested file first
     file_path = SERVE_DIR / asset_path
     if file_path.exists() and file_path.is_file():
-        return send_from_directory(SERVE_DIR, asset_path)
+        return send_from_directory(str(SERVE_DIR), asset_path)
 
     # For SPA routing, if file doesn't exist, serve index.html if available
     if not asset_path.startswith("api/"):
         index_file = SERVE_DIR / "index.html"
         if index_file.exists():
-            return send_from_directory(SERVE_DIR, "index.html")
+            return send_from_directory(str(SERVE_DIR), "index.html")
         return jsonify({
             "message": "Frontend not built. run `npm run build` or start the dev server to handle this request."
         }), 200
